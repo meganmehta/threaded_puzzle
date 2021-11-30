@@ -25,7 +25,7 @@ public A_IDS_A_15solver(){
 		
 		
 		System.out.println("\nThanks for using me to solve your 15 puzzle......Goodbye");
-		System.exit(1);
+		//System.exit(1);
 		
 	}
 
