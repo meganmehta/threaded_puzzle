@@ -1,11 +1,8 @@
-import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 
-import javafx.scene.Group;
 import javafx.scene.Scene;
 
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.geometry.Insets;
 import javafx.scene.layout.BorderPane;
@@ -16,6 +13,7 @@ import javafx.scene.text.FontWeight;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javafx.scene.control.Button;
 import javafx.scene.layout.GridPane;
@@ -32,7 +30,7 @@ public class JavaFXTemplate extends Application {
 	ArrayList<String> createdPuzzles;
 	int gameBoard[][] = new int[4][4];
 	GamePiece blackPiece;
-	int[] chosenPuzzle;
+	int[] chosenPuzzle, currentPuzzle;
 	ArrayList<int[]> solutionList;
 	Button seeSolution;
 
@@ -69,17 +67,19 @@ public class JavaFXTemplate extends Application {
 
 	}
 
-	//get current puzzle?
-	/*public int[] getCurrentPuzzle(GridPane gameBoard){
-		int[] current = new int[15];
+	//get current puzzle? HOW TO ITERATE THE GRID PANE
+	public int[] getCurrentPuzzle(GridPane gameBoard){
+		int[] current = new int[16];
 		int c = 0;
-		for (int j = 0; j < 4; j++){
-			for (int m = 0; m < 4; m++){
-				GamePiece p = gameBoard.get();
-			}
+
+		for (javafx.scene.Node g: gameBoard.getChildren()){
+			GamePiece cur = (GamePiece) g;
+			current[c] = Integer.valueOf(cur.getButtonNumber());
+			c++;
 		}
 
-	}*/
+		return current;
+	}
 
 	class MyCall implements Callable<ArrayList<int[]>> {
 
@@ -102,6 +102,7 @@ public class JavaFXTemplate extends Application {
 
 			for (int i = 0; i < 10; i++){
 				//System.out.println(Arrays.toString(pS.get(i).getKey()));
+				currentPuzzle = pS.get(i).getKey();
 				PuzzleSolution.add(pS.get(i).getKey());
 			}
 
@@ -143,10 +144,6 @@ public class JavaFXTemplate extends Application {
 		welcome.setToValue(0);
 		welcome.setNode(intro);
 		welcome.play();*/
-
-		//Each node contains an Array that represents the whole board after one move.
-		//Thread t = new Thread(()-> {A_IDS_A_15solver ids = new A_IDS_A_15solver();});
-		//t.start();
 
 		HashMap<String, Scene> sceneMap = new HashMap<String,Scene>();
 		Button startBtn = new Button("Start Game!");
@@ -193,14 +190,16 @@ public class JavaFXTemplate extends Application {
 				gp.setColumnNum(j);
 				gp.setButtonColor("yellow"); //default color
 				gp.setText(Integer.toString(chosenPuzzle[count])); //assigns text based on puzzle generated
+				gp.setButtonNumber(Integer.toString(chosenPuzzle[count]));
 				count++;
 				gp.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
 				gp.setMinWidth(50);
 				gp.setMinHeight(50);
 				gameBoard.add(gp, j, i);
+				currentPuzzle = getCurrentPuzzle(gameBoard);
 
 				//create "empty space" to switch buttons
-				if (gp.getText().equals("0")){
+				if (gp.getButtonNumber().equals("0")){
 					gp.setStyle("-fx-background-color: black;");
 					gp.setButtonColor("black");
 					blackPiece = gp;
@@ -209,17 +208,25 @@ public class JavaFXTemplate extends Application {
 				//onClick actions
 				gp.setOnAction(e -> {
 					//only switches button if it's a valid move
-					String tempText = gp.getText();
+					System.out.println("button clicked");
+					currentPuzzle = getCurrentPuzzle(gameBoard);
+					String tempText = gp.getButtonNumber();
 					if (validSwitch(gp) == true){
 						blackPiece.setText(tempText);
+						blackPiece.setButtonNumber(tempText);
 						blackPiece.setButtonColor("yellow");
 						blackPiece.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
 						gp.setButtonColor("black");
-						gp.setText("");
+						gp.setButtonNumber("0");
+						gp.setText("0");
 						gp.setStyle("-fx-background-color: black;");
 						blackPiece = gp;
 					}
-
+					else {
+						System.out.println("marked invalid");
+					}
+					currentPuzzle = getCurrentPuzzle(gameBoard);
+					System.out.println(Arrays.toString(currentPuzzle));
 				});
 
 			}
@@ -257,7 +264,7 @@ public class JavaFXTemplate extends Application {
 
 		a1h1.setOnAction(event->{
 			ex.submit(() -> {
-				Node startState = new Node(chosenPuzzle);
+				Node startState = new Node(currentPuzzle);
 				Future<ArrayList<int[]>> future = ex.submit(new MyCall(startState, "heuristicOne"));
 
 				try {
@@ -274,7 +281,7 @@ public class JavaFXTemplate extends Application {
 
 		a1h2.setOnAction(event->{
 			ex.submit(() -> {
-				Node startState = new Node(chosenPuzzle);
+				Node startState = new Node(currentPuzzle);
 				Future<ArrayList<int[]>> future = ex.submit(new MyCall(startState, "heuristicTwo"));
 
 				try {
@@ -292,35 +299,38 @@ public class JavaFXTemplate extends Application {
 			Platform.exit();
 		});
 
-		//FIX ANIMATION STEP
+		//FIX ANIMATION !!!
 		seeSolution.setOnAction(event->{
+			AtomicInteger move = new AtomicInteger();
 			PauseTransition pause = new PauseTransition(Duration.seconds(1.5));
-			for (int i = 0; i < 10; i++){
-				int[] move = solutionList.get(i);
-				System.out.println("NEW MOVE __________");
-				pause.setOnFinished(e -> {
-					int counter = 0;
-					for(javafx.scene.Node g:gameBoard.getChildren()) { //does this need to be inside the creation
-						//of the grid pane
-						GamePiece p = (GamePiece) g; // curr
-						p.setText(Integer.toString(move[counter]));
-						if (p.getText().equals("0")){
-							p.setButtonColor("black");
-							p.setStyle("-fx-background-color: black;-fx-font-family: 'verdana'; -fx-border-color: black;");
-
-						}
-						else{
-							p.setButtonColor("yellow");
-							p.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
-
-						}
-						System.out.println(Integer.toString(move[counter]));
-						counter++;
+			pause.setOnFinished(e-> {
+				int[] moves = solutionList.get(move.get());
+				System.out.println(Arrays.toString(moves)); //replace with logic to change actual front end
+				AtomicInteger buttonCount = new AtomicInteger();
+				//change to reflect actual game pieces? with appropriate attributes
+				for (javafx.scene.Node g:gameBoard.getChildren()){
+					GamePiece b = (GamePiece) g; // curr
+					b.setText(Integer.toString(moves[buttonCount.intValue()]));
+					b.setButtonNumber(Integer.toString(moves[buttonCount.intValue()]));
+					if (b.getButtonNumber().equals("0")){
+						b.setButtonColor("black");
+						b.setStyle("-fx-background-color: black;-fx-font-family: 'verdana'; -fx-border-color: black;");
+						blackPiece = b;
 					}
-
-					});
-				pause.play();
-			}
+					else{
+						b.setButtonColor("yellow");
+						b.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
+					}
+					buttonCount.getAndIncrement();
+				}
+				currentPuzzle = getCurrentPuzzle(gameBoard);
+				move.getAndIncrement();
+				if (move.get() < 10){
+					pause.play();
+				}
+			});
+			pause.play();
+			currentPuzzle = getCurrentPuzzle(gameBoard);
 			seeSolution.setDisable(true);
 
 		});
