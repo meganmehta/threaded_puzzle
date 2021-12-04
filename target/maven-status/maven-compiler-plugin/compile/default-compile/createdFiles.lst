@@ -1,8 +1,7 @@
 Node.class
 UserInterface.class
-MyCall.class
+JavaFXTemplate$MyCall.class
 A_IDS_A_15solver.class
-Threading.class
 JavaFXTemplate.class
 GamePiece.class
 DB_Solver2.class

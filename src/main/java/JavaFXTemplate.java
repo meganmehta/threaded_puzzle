@@ -1,4 +1,5 @@
 import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
 import javafx.application.Application;
 
 import javafx.scene.Group;
@@ -14,6 +15,7 @@ import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import javafx.scene.control.Button;
 import javafx.scene.layout.GridPane;
@@ -29,8 +31,10 @@ public class JavaFXTemplate extends Application {
 	Stage primaryStage;
 	ArrayList<String> createdPuzzles;
 	int gameBoard[][] = new int[4][4];
-	//int blackRow, blackCol;
 	GamePiece blackPiece;
+	int[] chosenPuzzle;
+	ArrayList<int[]> solutionList;
+	Button seeSolution;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -38,15 +42,17 @@ public class JavaFXTemplate extends Application {
 	}
 
 	//convert string of puzzles to array list
-	public ArrayList<Integer> stringToIntArrrayList(String puzzle){
+	public int[] stringToIntList(String puzzle){
 		ArrayList<String> list = new ArrayList<>(Arrays.asList(puzzle.split(" ")));
-		ArrayList<Integer> returnedList = new ArrayList<Integer>();
+		System.out.println(list);
+		int[] returnedList = new int[16];
 		for (int i = 0; i < list.size(); i++){
-			returnedList.add(Integer.valueOf(list.get(i)));
+			returnedList[i] = Integer.valueOf(list.get(i));
 		}
 		return returnedList;
 	}
 
+	//check if black square is left, right, up, or down
 	public boolean validSwitch(GamePiece selected){
 		if (selected.getRowNum() == blackPiece.getRowNum() || selected.getColumnNum() == blackPiece.getColumnNum()){
 			if (selected.getRowNum() == blackPiece.getRowNum() && (selected.getColumnNum() == blackPiece.getColumnNum() - 1 || selected.getColumnNum() == blackPiece.getColumnNum() + 1)){
@@ -63,9 +69,52 @@ public class JavaFXTemplate extends Application {
 
 	}
 
+	//get current puzzle?
+	/*public int[] getCurrentPuzzle(GridPane gameBoard){
+		int[] current = new int[15];
+		int c = 0;
+		for (int j = 0; j < 4; j++){
+			for (int m = 0; m < 4; m++){
+				GamePiece p = gameBoard.get();
+			}
+		}
+
+	}*/
+
+	class MyCall implements Callable<ArrayList<int[]>> {
+
+		//return puzzle solution?
+		Node startState;
+		String heuristic;
+
+		MyCall(Node sol, String heuristic){
+			startState = sol;
+			this.heuristic = heuristic;
+		}
+
+		@Override
+		public ArrayList<int[]> call() throws Exception {
+			DB_Solver2 puzzleSolver = new DB_Solver2(startState, heuristic);
+			ArrayList<int[]> PuzzleSolution = new ArrayList<int[]>();
+
+			Node solution = puzzleSolver.findSolutionPath();
+			ArrayList<Node> pS = puzzleSolver.getSolutionPath(solution);
+
+			for (int i = 0; i < 10; i++){
+				System.out.println(Arrays.toString(pS.get(i).getKey()));
+				PuzzleSolution.add(pS.get(i).getKey());
+			}
+
+			//Thread.sleep(1000);
+			return PuzzleSolution;
+		}
+
+	}
+
 	//contains all UI components
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+
 		//puzzles listed here - 10 unique puzzles to solve
 		//all of these puzzles can be solved by the AI puzzle solver algorithm
 		createdPuzzles = new ArrayList<String>();
@@ -108,8 +157,6 @@ public class JavaFXTemplate extends Application {
 		welcomePane.setCenter(intro);
 		welcomePane.setBottom(startBtn);
 
-		//use pause transition
-
 		//add all scenes/screens in hashmap
 		sceneMap.put("gameScreen", puzzleGameScene());
 
@@ -129,9 +176,8 @@ public class JavaFXTemplate extends Application {
 	public Scene puzzleGameScene(){
 
 		//choose a random puzzle from the createdPuzzles list
-		int rnd = new Random().nextInt(createdPuzzles.size());
-		ArrayList<Integer> chosenPuzzle = stringToIntArrrayList(createdPuzzles.get(rnd));
-		//System.out.println(chosenPuzzle);
+		int rndNum = new Random().nextInt(createdPuzzles.size());
+		chosenPuzzle = stringToIntList(createdPuzzles.get(rndNum));
 
 		//creates new gameBoard everytime a newGame button is pressed
 		GridPane gameBoard = new GridPane();
@@ -142,9 +188,7 @@ public class JavaFXTemplate extends Application {
 				gp.setRowNum(i);
 				gp.setColumnNum(j);
 				gp.setButtonColor("yellow"); //default color
-				gp.setText(Integer.toString(chosenPuzzle.get(count))); //assigns text based on puzzle generated
-				this.gameBoard[i][j] = chosenPuzzle.get(count);
-				System.out.println(this.gameBoard[i][j]);
+				gp.setText(Integer.toString(chosenPuzzle[count])); //assigns text based on puzzle generated
 				count++;
 				gp.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
 				gp.setMinWidth(50);
@@ -153,34 +197,34 @@ public class JavaFXTemplate extends Application {
 
 				//create "empty space" to switch buttons
 				if (gp.getText().equals("0")){
-					gp.setText("0");
+					gp.setText("");
 					gp.setStyle("-fx-background-color: black;");
 					gp.setButtonColor("black");
-					//blackRow = gp.getRowNum();
-					//blackCol = gp.getColumnNum();
 					blackPiece = gp;
 				}
 
 				//onClick actions
 				gp.setOnAction(e -> {
-					//check if black square is left, right, up, or down
-					int tempRow = gp.getRowNum();
-					int tempCol = gp.getColumnNum();
+					//only switches button if it's a valid move
 					String tempText = gp.getText();
 					if (validSwitch(gp) == true){
 						blackPiece.setText(tempText);
 						blackPiece.setButtonColor("yellow");
 						blackPiece.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
 						gp.setButtonColor("black");
-						gp.setText("0");
+						gp.setText("");
 						gp.setStyle("-fx-background-color: black;");
 						blackPiece = gp;
-
 					}
+
 				});
 			}
 		}
-		//System.out.println(this.gameBoard);
+
+		//grid pane styling
+		gameBoard.setHgap(5);
+		gameBoard.setVgap(5);
+
 		//creates menu with additional options:
 		//allow for a new puzzle the displayed,
 		// solve with AI H1,
@@ -205,6 +249,41 @@ public class JavaFXTemplate extends Application {
 			this.primaryStage.show();
 		});
 
+		ExecutorService ex = Executors.newFixedThreadPool(2);
+
+		a1h1.setOnAction(event->{
+			ex.submit(() -> {
+				Node startState = new Node(chosenPuzzle);
+				Future<ArrayList<int[]>> future = ex.submit(new MyCall(startState, "heuristicOne"));
+
+				try {
+					solutionList = future.get();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				}
+				Platform.runLater(() -> seeSolution.setDisable(false));
+			});
+
+		});
+
+		a1h2.setOnAction(event->{
+			ex.submit(() -> {
+				Node startState = new Node(chosenPuzzle);
+				Future<ArrayList<int[]>> future = ex.submit(new MyCall(startState, "heuristicTwo"));
+
+				try {
+					solutionList = future.get();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				}
+				Platform.runLater(() -> seeSolution.setDisable(false));
+			});
+		});
+
 		exitGame.setOnAction(event -> {
 			Platform.exit();
 		});
@@ -212,13 +291,28 @@ public class JavaFXTemplate extends Application {
 		MenuBar menuBar = new MenuBar();
 		menuBar.getMenus().add(mainMenu);
 
-		Button seeSolution = new Button("See Solution Displayed");
+		seeSolution = new Button("See Solution Displayed");
+		seeSolution.setDisable(true);
+		seeSolution.setOnAction(event->{
+			//set animation here
+			//recursive method using pause.setOnFinished(e->{});
+			PauseTransition pause = new PauseTransition(Duration.seconds(1.5));
+			int solutionIndex = 0; 
+			pause.setOnFinished(e -> {
+				for (int j = 0; j < 4; j++){
+					for (int k = 0; k < 4; k++){
+
+					}
+				}
+			});
+
+		});
+		seeSolution.setAlignment(Pos.CENTER);
 
 		BorderPane root = new BorderPane();
 		gameBoard.setAlignment(Pos.CENTER);
 		root.setCenter(gameBoard);
 		root.setBottom(seeSolution);
-		seeSolution.setAlignment(Pos.CENTER);
 		root.setTop(menuBar);
 
 		//used for welcome transition!!!
