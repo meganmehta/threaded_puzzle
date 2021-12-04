@@ -44,7 +44,7 @@ public class JavaFXTemplate extends Application {
 	//convert string of puzzles to array list
 	public int[] stringToIntList(String puzzle){
 		ArrayList<String> list = new ArrayList<>(Arrays.asList(puzzle.split(" ")));
-		System.out.println(list);
+		//System.out.println(list);
 		int[] returnedList = new int[16];
 		for (int i = 0; i < list.size(); i++){
 			returnedList[i] = Integer.valueOf(list.get(i));
@@ -101,7 +101,7 @@ public class JavaFXTemplate extends Application {
 			ArrayList<Node> pS = puzzleSolver.getSolutionPath(solution);
 
 			for (int i = 0; i < 10; i++){
-				System.out.println(Arrays.toString(pS.get(i).getKey()));
+				//System.out.println(Arrays.toString(pS.get(i).getKey()));
 				PuzzleSolution.add(pS.get(i).getKey());
 			}
 
@@ -175,6 +175,10 @@ public class JavaFXTemplate extends Application {
 
 	public Scene puzzleGameScene(){
 
+		seeSolution = new Button("See Solution Displayed");
+		seeSolution.setDisable(true);
+		seeSolution.setAlignment(Pos.CENTER);
+
 		//choose a random puzzle from the createdPuzzles list
 		int rndNum = new Random().nextInt(createdPuzzles.size());
 		chosenPuzzle = stringToIntList(createdPuzzles.get(rndNum));
@@ -197,7 +201,6 @@ public class JavaFXTemplate extends Application {
 
 				//create "empty space" to switch buttons
 				if (gp.getText().equals("0")){
-					gp.setText("");
 					gp.setStyle("-fx-background-color: black;");
 					gp.setButtonColor("black");
 					blackPiece = gp;
@@ -218,6 +221,7 @@ public class JavaFXTemplate extends Application {
 					}
 
 				});
+
 			}
 		}
 
@@ -288,32 +292,48 @@ public class JavaFXTemplate extends Application {
 			Platform.exit();
 		});
 
-		MenuBar menuBar = new MenuBar();
-		menuBar.getMenus().add(mainMenu);
-
-		seeSolution = new Button("See Solution Displayed");
-		seeSolution.setDisable(true);
+		//FIX ANIMATION STEP
 		seeSolution.setOnAction(event->{
-			//set animation here
-			//recursive method using pause.setOnFinished(e->{});
 			PauseTransition pause = new PauseTransition(Duration.seconds(1.5));
-			int solutionIndex = 0; 
-			pause.setOnFinished(e -> {
-				for (int j = 0; j < 4; j++){
-					for (int k = 0; k < 4; k++){
+			for (int i = 0; i < 10; i++){
+				int[] move = solutionList.get(i);
+				System.out.println("NEW MOVE __________");
+				pause.setOnFinished(e -> {
+					int counter = 0;
+					for(javafx.scene.Node g:gameBoard.getChildren()) { //does this need to be inside the creation
+						//of the grid pane
+						GamePiece p = (GamePiece) g; // curr
+						p.setText(Integer.toString(move[counter]));
+						if (p.getText().equals("0")){
+							p.setButtonColor("black");
+							p.setStyle("-fx-background-color: black;-fx-font-family: 'verdana'; -fx-border-color: black;");
 
+						}
+						else{
+							p.setButtonColor("yellow");
+							p.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
+
+						}
+						System.out.println(Integer.toString(move[counter]));
+						counter++;
 					}
-				}
-			});
+
+					});
+				pause.play();
+			}
+			seeSolution.setDisable(true);
 
 		});
-		seeSolution.setAlignment(Pos.CENTER);
+
+		MenuBar menuBar = new MenuBar();
+		menuBar.getMenus().add(mainMenu);
 
 		BorderPane root = new BorderPane();
 		gameBoard.setAlignment(Pos.CENTER);
 		root.setCenter(gameBoard);
 		root.setBottom(seeSolution);
 		root.setTop(menuBar);
+
 
 		//used for welcome transition!!!
 		//Group primary = new Group();
