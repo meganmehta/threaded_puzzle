@@ -1,6 +1,9 @@
+import com.sun.java.accessibility.util.SwingEventMonitor;
+import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 
+import javafx.scene.Group;
 import javafx.scene.Scene;
 
 import javafx.stage.Stage;
@@ -33,6 +36,7 @@ public class JavaFXTemplate extends Application {
 	int[] chosenPuzzle, currentPuzzle;
 	ArrayList<int[]> solutionList;
 	Button seeSolution;
+	Text winMessage;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -134,16 +138,10 @@ public class JavaFXTemplate extends Application {
 
 		//create welcome transition
 		Text intro = new Text("Welcome to the Puzzle Game!");
-		intro.setX(100);
+		intro.setX(225);
 		intro.setY(250);
-		intro.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 50));
+		intro.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 25));
 
-		/*FadeTransition welcome = new FadeTransition();
-		welcome.setDuration(Duration.millis(5000));
-		welcome.setFromValue(10);
-		welcome.setToValue(0);
-		welcome.setNode(intro);
-		welcome.play();*/
 
 		HashMap<String, Scene> sceneMap = new HashMap<String,Scene>();
 		Button startBtn = new Button("Start Game!");
@@ -151,8 +149,8 @@ public class JavaFXTemplate extends Application {
 
 		BorderPane welcomePane = new BorderPane();
 		welcomePane.setPadding(new Insets(70));
-		welcomePane.setCenter(intro);
-		welcomePane.setBottom(startBtn);
+		welcomePane.setCenter(startBtn);
+		welcomePane.getChildren().add(intro);
 
 		//add all scenes/screens in hashmap
 		sceneMap.put("gameScreen", puzzleGameScene());
@@ -163,7 +161,7 @@ public class JavaFXTemplate extends Application {
 		Scene introScene = new Scene(welcomePane, 850, 750);
 
 		//add any styling elements in this function
-		introScene.getRoot().setStyle("-fx-background-color: blue;-fx-font-family: 'verdana';");
+		introScene.getRoot().setStyle("-fx-background-color: #619bff;-fx-font-family: 'verdana';");
 
 		primaryStage.setScene(introScene);
 		primaryStage.show();
@@ -172,6 +170,7 @@ public class JavaFXTemplate extends Application {
 
 	public Scene puzzleGameScene(){
 
+		int[] endResult = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 , 12, 13, 14, 15};
 		seeSolution = new Button("See Solution Displayed");
 		seeSolution.setDisable(true);
 		seeSolution.setAlignment(Pos.CENTER);
@@ -188,13 +187,13 @@ public class JavaFXTemplate extends Application {
 				GamePiece gp = new GamePiece();
 				gp.setRowNum(i);
 				gp.setColumnNum(j);
+				gp.setMinWidth(100);
+				gp.setMinHeight(100);
 				gp.setButtonColor("yellow"); //default color
 				gp.setText(Integer.toString(chosenPuzzle[count])); //assigns text based on puzzle generated
 				gp.setButtonNumber(Integer.toString(chosenPuzzle[count]));
 				count++;
-				gp.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
-				gp.setMinWidth(50);
-				gp.setMinHeight(50);
+				gp.setStyle("-fx-background-color: #ebcf34;-fx-font-family: 'verdana'; -fx-border-color: black;");
 				gameBoard.add(gp, j, i);
 				currentPuzzle = getCurrentPuzzle(gameBoard);
 
@@ -215,7 +214,7 @@ public class JavaFXTemplate extends Application {
 						blackPiece.setText(tempText);
 						blackPiece.setButtonNumber(tempText);
 						blackPiece.setButtonColor("yellow");
-						blackPiece.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
+						blackPiece.setStyle("-fx-background-color: #ebcf34;-fx-font-family: 'verdana'; -fx-border-color: black;");
 						gp.setButtonColor("black");
 						gp.setButtonNumber("0");
 						gp.setText("0");
@@ -227,6 +226,9 @@ public class JavaFXTemplate extends Application {
 					}
 					currentPuzzle = getCurrentPuzzle(gameBoard);
 					System.out.println(Arrays.toString(currentPuzzle));
+					if (currentPuzzle.equals(endResult)){
+						winMessage.setText("Congrats you won!");
+					}
 				});
 
 			}
@@ -235,6 +237,11 @@ public class JavaFXTemplate extends Application {
 		//grid pane styling
 		gameBoard.setHgap(5);
 		gameBoard.setVgap(5);
+
+		//message to display when user wins game!
+		winMessage = new Text("");
+		winMessage.setX(250);
+		winMessage.setY(150);
 
 		//creates menu with additional options:
 		//allow for a new puzzle the displayed,
@@ -299,7 +306,7 @@ public class JavaFXTemplate extends Application {
 			Platform.exit();
 		});
 
-		//FIX ANIMATION !!!
+
 		seeSolution.setOnAction(event->{
 			AtomicInteger move = new AtomicInteger();
 			PauseTransition pause = new PauseTransition(Duration.seconds(1.5));
@@ -307,7 +314,6 @@ public class JavaFXTemplate extends Application {
 				int[] moves = solutionList.get(move.get());
 				System.out.println(Arrays.toString(moves)); //replace with logic to change actual front end
 				AtomicInteger buttonCount = new AtomicInteger();
-				//change to reflect actual game pieces? with appropriate attributes
 				for (javafx.scene.Node g:gameBoard.getChildren()){
 					GamePiece b = (GamePiece) g; // curr
 					b.setText(Integer.toString(moves[buttonCount.intValue()]));
@@ -319,7 +325,7 @@ public class JavaFXTemplate extends Application {
 					}
 					else{
 						b.setButtonColor("yellow");
-						b.setStyle("-fx-background-color: yellow;-fx-font-family: 'verdana'; -fx-border-color: black;");
+						b.setStyle("-fx-background-color: #ebcf34;-fx-font-family: 'verdana'; -fx-border-color: black;");
 					}
 					buttonCount.getAndIncrement();
 				}
@@ -331,6 +337,9 @@ public class JavaFXTemplate extends Application {
 			});
 			pause.play();
 			currentPuzzle = getCurrentPuzzle(gameBoard);
+			if (currentPuzzle.equals(endResult)){
+				winMessage.setText("Congrats you won!");
+			}
 			seeSolution.setDisable(true);
 
 		});
@@ -343,14 +352,10 @@ public class JavaFXTemplate extends Application {
 		root.setCenter(gameBoard);
 		root.setBottom(seeSolution);
 		root.setTop(menuBar);
-
-
-		//used for welcome transition!!!
-		//Group primary = new Group();
-		//primary.getChildren().addAll(intro);
+		root.getChildren().add(winMessage);
 
 		Scene gameScene = new Scene(root, 850, 750);
-		gameScene.getRoot().setStyle("-fx-background-color: blue;-fx-font-family: 'verdana';");
+		gameScene.getRoot().setStyle("-fx-background-color: #619bff;-fx-font-family: 'verdana';");
 
 		return gameScene;
 
